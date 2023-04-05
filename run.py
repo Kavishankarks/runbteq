@@ -1,19 +1,13 @@
 import pandas as pd
 import re 
 import streamlit as st
+import matplotlib.pyplot as plt
 import numpy as np
 # df = pd.read_csv("edw_sql_analysis - run5.csv")
 
 
+st.title("Analyzing BTEQ Run: A Comprehensive Evaluation of Results ")
 
-def extractSchemaTable(text):
-    pattern = r"schema:\s*(\w+)\s+and\s+table\s+name:\s*(\w+)"
-    match = re.search(pattern, text)
-    if match: 
-        return "Schema : " + match.group(1) + " Table : " + match.group(2)
-    else :
-        return "No match found."
-    
 class Summary :
     def __init__(self,df):
         self.df = df
@@ -47,14 +41,35 @@ class Summary :
         
     def keyword_error(self):
     	text_input = st.text_input("Search Error")
-    	if text_input :
+    	if text_input and st.button("Submit") :
     		dff = df[df["error "] != None]
     		dff.fillna("NA",inplace=True)
     		errors = dff[dff["error "].str.contains(text_input,case=False)]
     		st.write(errors)
-			
-		
-        	 
+
+    def search_target_table(self):
+        text_input = st.text_input("Search Target Table")
+        if text_input and st.button("Submit target table search") :
+            dff = df[df["target_table"] != None]
+            dff.fillna("NA",inplace=True)
+            target_table = dff[dff["target_table"].str.contains(text_input,case=False)]
+            st.write(target_table)
+
+    def extractSchemaTable(self,text):
+        pattern = r"schema:\s*(\w+)\s+and\s+table\s+name:\s*(\w+)"
+        match = re.search(pattern, text)
+        if match: 
+            return "Schema : " + match.group(1) + " Table : " + match.group(2)
+        else :
+            return "No match found."
+
+    def get_table_not_found(self):
+        errors = df[df["import_status"]=="Failed"]
+        for i in errors["error "]:
+            res = self.extractSchemaTable(i)
+            if(res != "No match found."):
+                st.write(res)
+    
 uploaded_file = st.file_uploader("Choose a file")
 if uploaded_file is not None:
 	df = pd.read_csv(uploaded_file)
@@ -62,7 +77,6 @@ if uploaded_file is not None:
 	st.write(df)
 	summary = Summary(df)
 	summary.buildSummary()
-	
 	if st.button("Get All parser error"):
 		parser_error = df[df["parse_status"]=="Failed"]
 		st.write(parser_error)
@@ -72,7 +86,10 @@ if uploaded_file is not None:
 	if st.button("Get All Metadata build error"):
 		metadata_error = df[df["metadata_build_status"]=="failed"]
 		st.write(metadata_error)
+	if st.button("Get All Tables Not Found"):
+		summary.get_table_not_found()
 	summary.keyword_error()
-
-
-
+	summary.search_target_table()
+	st.write("\n\n🔄  Mapping error for jira is in progress 🔄")
+    # st.write("sd")
+	
