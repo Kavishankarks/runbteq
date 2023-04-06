@@ -39,36 +39,78 @@ class Summary :
         st.write("SQL Import Failed : ", self.get_import_failed())
         
     def keyword_error(self):
-    	text_input = st.text_input("Search Error")
-    	if text_input and st.button("Submit") :
-    		dff = df[df["error "] != None]
-    		dff.fillna("NA",inplace=True)
-    		errors = dff[dff["error "].str.contains(text_input,case=False)]
-    		st.write(errors)
+        text_input = st.text_input("Search Error")
+        if text_input and st.button("Submit") :     
+            dff = df[df["error "] != None]
+            dff.fillna("NA",inplace=True)
+            errors = dff[dff["error "].str.contains(text_input,case=False)]
+            st.write(errors)
 
     def search_target_table(self):
-        text_input = st.text_input("Search Target Table")
-        if text_input and st.button("Submit target table search") :
+        unique_tables = {}
+        for i in df["target_table"]:
+            if i  not in unique_tables and type(i) == str:
+                unique_tables[i] = 1
+        selected_table = st.selectbox("Select table",unique_tables.keys())
+        if st.button("Search table"):
             dff = df[df["target_table"] != None]
             dff.fillna("NA",inplace=True)
-            target_table = dff[dff["target_table"].str.contains(text_input,case=False)]
+            target_table = dff[dff["target_table"].str.contains(selected_table,case=False)]
+            metadata, parser , sqlimport = self.get_individual_table(target_table)
             st.write(target_table)
+            st.write("\t\tMetadata Error",metadata)
+            st.write("\t\tParser Error",parser)
+            st.write("\t\tSQL Import Error",sqlimport)
+
+
 
     def extractSchemaTable(self,text):
+        if(type(text) != str or "Cant" not in text) :
+            return None
         pattern = r"schema:\s*(\w+)\s+and\s+table\s+name:\s*(\w+)"
         match = re.search(pattern, text)
         if match: 
             return "Schema : " + match.group(1) + " Table : " + match.group(2)
         else :
-            return "No match found."
+            return None
 
     def get_table_not_found(self):
         errors = df[df["import_status"]=="Failed"]
+        tables_count = 0
         for i in errors["error "]:
             res = self.extractSchemaTable(i)
-            if(res != "No match found."):
+            if(res):
+                tables_count += 1
                 st.write(res)
-    
+        st.write("Total table count : ",tables_count)
+
+    def get_individual_table(self, target_table):
+        return (target_table["metadata_build_status"] == "failed").sum() , (target_table["parse_status"] == "Failed").sum(), (target_table["import_status"] == "Failed").sum()
+
+    def get_table_completed(self):
+        unique_tables = {}
+        for i in df["target_table"]:
+            if i  not in unique_tables and type(i) == str:
+                unique_tables[i] = 1
+        dff = df[df["target_table"] != None]
+        dff.fillna("NA",inplace=True)
+        fully_completed =0 
+        cnt = 1
+        for i in unique_tables.keys():
+            target_table = dff[dff["target_table"] == i]
+            metadata, parser , sqlimport = self.get_individual_table(target_table)
+            if (metadata ==0 and parser ==0 and sqlimport ==0):
+                st.write(str(cnt) + ". Table Name : " + i + " Total SQL's :  " + str(len(target_table))  + " Completed ✅ " )
+                fully_completed += 1
+            else :
+                total_failed = metadata + parser + sqlimport
+                st.write(str(cnt) + ". Table Name : " + i +  " Total SQL's :  " + str(len(target_table)) + " Failed : " + str(total_failed))
+                st.write("    Metadata Error",metadata)
+                st.write("    Parser Error",parser)
+                st.write("    SQL Import Error",sqlimport)
+            cnt += 1
+        st.subheader("Fully completed : " + str(fully_completed) + " out of : " + str(cnt))
+
 uploaded_file = st.file_uploader("Choose a file")
 if uploaded_file is not None:
 	df = pd.read_csv(uploaded_file)
@@ -89,6 +131,9 @@ if uploaded_file is not None:
 		summary.get_table_not_found()
 	summary.keyword_error()
 	summary.search_target_table()
+	if st.button("Get table analysis") :
+		summary.get_table_completed()
+       
 	st.write("\n\n🔄  Mapping error for jira is in progress 🔄")
     # st.write("sd")
 	
