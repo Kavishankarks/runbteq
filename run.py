@@ -41,9 +41,9 @@ class Summary :
     def keyword_error(self):
         text_input = st.text_input("Search Error")
         if text_input and st.button("Submit") :     
-            dff = df[df["error "] != None]
+            dff = df[df["error"] != None]
             dff.fillna("NA",inplace=True)
-            errors = dff[dff["error "].str.contains(text_input,case=False)]
+            errors = dff[dff["error"].str.contains(text_input,case=False)]
             st.write(errors)
 
     def search_target_table(self):
@@ -77,7 +77,7 @@ class Summary :
     def get_table_not_found(self):
         errors = df[df["import_status"]=="Failed"]
         tables_count = 0
-        for i in errors["error "]:
+        for i in errors["error"]:
             res = self.extractSchemaTable(i)
             if(res):
                 tables_count += 1
@@ -113,28 +113,27 @@ class Summary :
 
 uploaded_file = st.file_uploader("Choose a file")
 if uploaded_file is not None:
-	df = pd.read_csv(uploaded_file)
-	df.columns = df.columns.str.lower().str.replace(' ', '_')
-	st.title("Run report")
-	st.write(df)
-	summary = Summary(df)
-	summary.buildSummary()
-	if st.button("Get All parser error"):
-		parser_error = df[df["parse_status"]=="Failed"]
-		st.write(parser_error)
-	if st.button("Get All SQL Import error"):
-		import_error = df[df["import_status"]=="Failed"]
-		st.write(import_error)
-	if st.button("Get All Metadata build error"):
-		metadata_error = df[df["metadata_build_status"]=="failed"]
-		st.write(metadata_error)
-	if st.button("Get All Tables Not Found"):
-		summary.get_table_not_found()
-	summary.keyword_error()
-	summary.search_target_table()
-	if st.button("Get table analysis") :
-		summary.get_table_completed()
+    df = pd.read_csv(uploaded_file)
+    df.columns = df.columns.str.lower().str.replace(' ', '_')
+    st.title("Run report")
+    st.write(df)
+    summary = Summary(df)
+    summary.buildSummary()
+    if st.button("Get All parser error"):
+        parser_error = df[df["parse_status"]=="Failed"]
+        st.write(parser_error)
+    if st.button("Get All SQL Import error"):
+        import_error = df[df["import_status"]=="Failed"]
+        st.write(import_error)
+    if st.button("Get All Metadata build error"):
+        metadata_error = df[df["metadata_build_status"]=="failed"]
+        st.write(metadata_error)
+    if st.button("Get All Tables Not Found"):
+        summary.get_table_not_found()
+    summary.keyword_error()
+    summary.search_target_table()
+    if st.button("Get table analysis") :
+        summary.get_table_completed()
        
-	st.write("\n\n🔄  Mapping error for jira is in progress 🔄")
+    st.write("\n\n🔄  Mapping error for jira is in progress 🔄")
     # st.write("sd")
-	
