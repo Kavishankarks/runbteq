@@ -114,6 +114,7 @@ class Summary :
 uploaded_file = st.file_uploader("Choose a file")
 if uploaded_file is not None:
 	df = pd.read_csv(uploaded_file)
+	df.columns = df.columns.str.lower().str.replace(' ', '_')
 	st.title("Run report")
 	st.write(df)
 	summary = Summary(df)
